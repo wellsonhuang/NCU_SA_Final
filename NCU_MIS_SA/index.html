@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>瀏覽提案</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+	<script src="statics/js/jquery-3.4.1.min.js"></script>
+	<link rel="stylesheet" href="statics/css/proposal.css">
+
+</head>
+<body>
+
+<!-- Navbar (sit on top) -->
+<div class="w3-top">
+  <div class="w3-bar w3-white w3-wide w3-padding w3-card">
+    <a href="index.html" class="w3-bar-item w3-button">呱呱<b> WAWA</b></a>
+    <!-- Float links to the right. Hide them on small screens -->
+    <div class="w3-right w3-hide-small">
+      <a href="sign_in.html" class="w3-bar-item w3-button">登入</a> 
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-wide" style="max-width:1500px;" id="home">
+  <!-- <img class="w3-image" src="/w3images/architect.jpg" alt="Architecture" width="1500" height="800"> -->
+  <div class="w3-display-middle w3-margin-top w3-center">
+    <h1 class="w3-xxlarge w3-text-white"><span class="w3-padding w3-black w3-opacity-min"><b>BR</b></span> <span class="w3-hide-small w3-text-light-grey">Architects</span></h1>
+  </div>
+  
+</header>
+
+<!-- Page content -->
+<div class="w3-content w3-padding " style="max-width:1564px">
+
+  <!-- Project Section -->
+  <div class="w3-container w3-padding-32" id="projects">
+    <h3 class="w3-border-bottom w3-border-light-grey w3-padding-16">最新提案</h3>
+  </div>
+  <div class="grid-container" id="product_panel"></div>
+  
+  
+  
+  
+  
+
+  <!-- About Section -->
+  <div class="w3-container w3-padding-32" id="about">
+    <h3 class="w3-border-bottom w3-border-light-grey w3-padding-16">About</h3>
+    <p>
+    </p>
+  </div>
+
+
+<!-- End page content -->
+</div>
+
+
+<script>
+    var [client_cart_obj, client_cart_amount]  = getCartDataFromClient();
+    
+    function getAllProduct() {
+      $.ajax({
+        type: "GET",
+        url: "api/proposal.do",
+        crossDomain: true,
+        cache: false,
+        dataType: 'json',
+        timeout: 5000,
+        success: function (response) {
+          if (response.status == 200) {
+        	var product_panel = ''; 
+        	
+        	$.each(response.response.data, function (){        		
+        			product_panel += addProduct(this);
+        	})
+        	
+        	$("#product_panel").append(product_panel);
+        	setButtonFunction();
+        	checkIfExistInCart();
+          }
+        },
+        error: function () {
+          alert("無法連線到伺服器！");
+        }
+      });
+    }
+
+    getAllProduct();
+    
+    function addProduct(data) {
+    	inner_html="";
+    	inner_html +='<div>';
+    	inner_html +='<img src="statics/img/proposal/'+data.image+'" alt="proposal photo" width="99%" >';
+    	inner_html +='<h3>'+data.title+'</h3>';
+    	inner_html +='<p>'+data.content+'</p>';
+    	inner_html +='<br>';
+    	inner_html +='<p>目標募資額：'+data.goal+'</p>';
+    	inner_html +='<p>目前募資額：'+data.raised_funds+'</p>';
+    	inner_html +='<input type="button"  value="進入頁面" onclick="getProposalID(this)" class="btn" id="'+data.proposal_id+'">'
+    	inner_html +='<br>';
+    	inner_html +='<br>';
+    	inner_html +='</div>';
+
+
+    	
+		return inner_html;
+    }
+    
+    //這一個按鈕按下去之後 就可以抓proposal的ID值 by王偉倫
+    
+    function getProposalID(myObj){
+    	localStorage.setItem("click_proposal_id",JSON.stringify(myObj.id)); 
+    	window.location.href="sign_in.html";
+    	
+    }
+    
+    function setButtonFunction() {
+    	$('button[name="add_cart"]').click(function () {
+    		var action = (this.id).split('_')[0];
+    		var destination = (this.id).split('_')[1];
+    		var id = (this.id).split('_')[2];
+    		addProductToCart(id, 1);
+        });
+    }
+    
+    function getCartDataFromClient() {
+    	let cart = JSON.parse(localStorage.getItem("client_cart_obj"));
+    	let amount = JSON.parse(localStorage.getItem("client_cart_amount"));
+    	cart = !cart ? new Array() : cart;
+    	amount = !amount ? new Array() : amount;
+    	return [cart, amount];
+    }
+    
+    function addProductToCart(id, amount) {
+    	if (!(client_cart_obj.includes(id))) {
+    		client_cart_obj.push(id);
+    		client_cart_amount.push(amount);
+    		updateCartDataToClent();
+    	}
+    	
+    	checkIfExistInCart();
+    }
+    
+    function updateCartDataToClent() {
+    	localStorage.setItem("client_cart_obj", JSON.stringify(client_cart_obj));
+    	localStorage.setItem("client_cart_amount", JSON.stringify(client_cart_amount));
+    }
+    
+    function checkIfExistInCart() {
+    	$('button[name="add_cart"]').each(function (){
+    		var action = (this.id).split('_')[0];
+    		var destination = (this.id).split('_')[1];
+    		var id = (this.id).split('_')[2];
+    		if (client_cart_obj.includes(id)) {
+    			setButtonState(this.id, false);
+    		}
+    		else {
+    			setButtonState(this.id, true);
+    		}
+    		
+        });
+    }
+    
+    function setButtonState(id, action) {
+    	if (!action) {
+    	    $('#' + id).prop('disabled', true);
+    	    $('#' + id).addClass('disabled');
+    	    $('#' + id).html('已加入');
+    	}
+    	else {
+    		$('#' + id).prop('disabled', false);
+    	    $('#' + id).removeClass('disabled');
+    	    $('#' + id).html('加入購物車');
+    	}
+    }
+   
+  </script>
+
+<!-- Footer -->
+<footer class="w3-center w3-black w3-padding-16">
+  <p>Powered by <a href="https://www.w3schools.com/w3css/default.asp" title="W3.CSS" target="_gray" class="w3-hover-text-green">WAWA</a></p>
+</footer>
+
+</body>
+
+</html>
